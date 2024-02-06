@@ -23,4 +23,5 @@ GTAGS
 bin/*
 share/*
 qemu-bridge-helper
+local_scripts/*
 
