@@ -13,18 +13,25 @@
  *
  */
 
+#include <glib.h>
+#include <glib/gversionmacros.h>
+
 #ifndef QEMU_GLIB_COMPAT_H
 #define QEMU_GLIB_COMPAT_H
 
 /* Ask for warnings for anything that was marked deprecated in
  * the defined version, or before. It is a candidate for rewrite.
  */
-#define GLIB_VERSION_MIN_REQUIRED GLIB_VERSION_2_66
+
+//#define GLIB_VERSION_2_66 (2 << 16 | 66 << 8 | 0)
+
+
+//#define GLIB_VERSION_MIN_REQUIRED GLIB_VERSION_CUR_STABLE
 
 /* Ask for warnings if code tries to use function that did not
  * exist in the defined version. These risk breaking builds
  */
-#define GLIB_VERSION_MAX_ALLOWED GLIB_VERSION_2_66
+//#define GLIB_VERSION_MAX_ALLOWED GLIB_VERSION_2_66
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"

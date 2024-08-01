@@ -16,6 +16,7 @@
 #include "qemu/osdep.h"
 #include <sys/ioctl.h>
 #include <poll.h>
+#include <time.h>
 
 #include <linux/kvm.h>
 
@@ -2990,8 +2991,18 @@ int kvm_cpu_exec(CPUState *cpu)
     bql_unlock();
     cpu_exec_start(cpu);
 
+    int file_fd = open("time.txt", O_WRONLY | O_CREAT | O_APPEND, 0644);
+    if (file_fd < 0) {
+        perror("open time.txt");
+    }
+
+    time_t last_write_time = time(NULL);
+    struct timespec start_kvm, end_kvm, start_emulation, end_emulation;
+    long kvm_time_ns = 0, emulation_time_ns = 0;
+
     do {
         MemTxAttrs attrs;
+        clock_gettime(CLOCK_MONOTONIC, &start_kvm);
 
         if (cpu->vcpu_dirty) {
             ret = kvm_arch_put_registers(cpu, KVM_PUT_RUNTIME_STATE);
@@ -3022,6 +3033,9 @@ int kvm_cpu_exec(CPUState *cpu)
         smp_rmb();
 
         run_ret = kvm_vcpu_ioctl(cpu, KVM_RUN, 0);
+
+        clock_gettime(CLOCK_MONOTONIC, &end_kvm);
+        clock_gettime(CLOCK_MONOTONIC, &start_emulation);
 
         attrs = kvm_arch_post_run(cpu, run);
 
@@ -3155,7 +3169,27 @@ int kvm_cpu_exec(CPUState *cpu)
             ret = kvm_arch_handle_exit(cpu, run);
             break;
         }
+        clock_gettime(CLOCK_MONOTONIC, &end_emulation);
+        kvm_time_ns += (end_kvm.tv_sec - start_kvm.tv_sec) * 1000000000 + (end_kvm.tv_nsec - start_kvm.tv_nsec);
+        emulation_time_ns += (end_emulation.tv_sec - start_emulation.tv_sec) * 1000000000 + (end_emulation.tv_nsec - start_emulation.tv_nsec);
+
+        time_t current_time = time(NULL);
+        if (difftime(current_time, last_write_time) >= 10) {
+            char buffer[256];
+            snprintf(buffer, sizeof(buffer), "KVM time: %ld ns, Emulation time: %ld ns\n", kvm_time_ns, emulation_time_ns);
+            qemu_log("KVM time: %ld ns, Emulation time: %ld ns\n", kvm_time_ns, emulation_time_ns);
+
+            ssize_t size=write(file_fd, buffer, strlen(buffer));
+            if (size < 0) {
+                perror("write time.txt");
+            }
+            last_write_time = current_time;
+            kvm_time_ns = 0;
+            emulation_time_ns = 0;
+        }
     } while (ret == 0);
+
+    close(file_fd);
 
     cpu_exec_end(cpu);
     bql_lock();
