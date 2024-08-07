@@ -9,3 +9,16 @@ sudo make install
 
 # binary path
 ./build/
+
+
+# build memo 202407
+export CFLAGS="$(pkg-config --cflags glib-2.0)"
+export LDFLAGS="$(pkg-config --libs glib-2.0)"
+
+
+bashrcに
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+
+
+sudo ./configure
