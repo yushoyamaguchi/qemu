@@ -4,7 +4,7 @@ sudo make
 sudo make install
 
 # to install
-- libpixman-1-dev  ninja-build  libglib2.0-dev libleveldb-dev flex
+- libpixman-1-dev  ninja-build  libglib2.0-dev libleveldb-dev flex bison
 - python3-venv  python3-pip  python3-setuptools
 ## install with pip
 tomli
