@@ -4,8 +4,10 @@ sudo make
 sudo make install
 
 # to install
-- libpixman-1-dev  ninja-build  libglib2.0-dev
+- libpixman-1-dev  ninja-build  libglib2.0-dev libleveldb-dev flex
 - python3-venv  python3-pip  python3-setuptools
+## install with pip
+tomli
 
 # binary path
 ./build/
