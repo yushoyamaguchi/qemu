@@ -65,6 +65,7 @@ int (*qemu_main)(void) = os_darwin_cfrunloop_main;
 
 int main(int argc, char **argv)
 {
+    printf("yamaguchi!!!!\n");
     qemu_init(argc, argv);
     bql_unlock();
     if (qemu_main) {

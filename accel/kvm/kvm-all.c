@@ -3115,6 +3115,9 @@ int kvm_cpu_exec(CPUState *cpu)
     time_t last_write_time = time(NULL);
     struct timespec start_kvm, end_kvm, start_emulation, end_emulation;
     long kvm_time_ns = 0, emulation_time_ns = 0;
+    long count_io_in = 0, count_io_out =0, count_mmio = 0, count_irq = 0, count_others = 0;
+    long count_disk_in = 0, count_uart_in = 0;
+    long count_132 = 0;
 
     do {
         MemTxAttrs attrs;
@@ -3201,8 +3204,26 @@ int kvm_cpu_exec(CPUState *cpu)
                           (uint8_t *)run + run->io.data_offset,
                           run->io.direction,
                           run->io.size,
-                          run->io.count);
+                          run->io.count);      
             ret = 0;
+            if (run->io.direction == KVM_EXIT_IO_OUT) {
+                count_io_out++;
+            } else if (run->io.direction == KVM_EXIT_IO_IN) {
+                count_io_in++;
+                switch (run->io.port) {
+                case 0x1F0 ... 0x1F7:
+                    count_disk_in++;
+                    break;
+                case 0x3f8 ... 0x3fd:
+                    count_uart_in++;
+                    break;    
+                default:
+                    break;
+                }
+                if (run->io.port == 0x84) {
+                    count_132++;
+                }
+            }
             break;
         case KVM_EXIT_MMIO:
             /* Called outside BQL */
@@ -3212,21 +3233,26 @@ int kvm_cpu_exec(CPUState *cpu)
                              run->mmio.len,
                              run->mmio.is_write);
             ret = 0;
+            count_mmio++;
             break;
         case KVM_EXIT_IRQ_WINDOW_OPEN:
             ret = EXCP_INTERRUPT;
+            count_irq++;
             break;
         case KVM_EXIT_SHUTDOWN:
             qemu_system_reset_request(SHUTDOWN_CAUSE_GUEST_RESET);
             ret = EXCP_INTERRUPT;
+            count_others++;
             break;
         case KVM_EXIT_UNKNOWN:
             fprintf(stderr, "KVM: unknown exit, hardware reason %" PRIx64 "\n",
                     (uint64_t)run->hw.hardware_exit_reason);
             ret = -1;
+            count_others++;
             break;
         case KVM_EXIT_INTERNAL_ERROR:
             ret = kvm_handle_internal_error(cpu, run);
+            count_others++;
             break;
         case KVM_EXIT_DIRTY_RING_FULL:
             /*
@@ -3249,8 +3275,10 @@ int kvm_cpu_exec(CPUState *cpu)
             bql_unlock();
             dirtylimit_vcpu_execute(cpu);
             ret = 0;
+            count_others++;
             break;
         case KVM_EXIT_SYSTEM_EVENT:
+            count_others++;
             trace_kvm_run_exit_system_event(cpu->cpu_index, run->system_event.type);
             switch (run->system_event.type) {
             case KVM_SYSTEM_EVENT_SHUTDOWN:
@@ -3274,6 +3302,7 @@ int kvm_cpu_exec(CPUState *cpu)
             }
             break;
         case KVM_EXIT_MEMORY_FAULT:
+            count_others++;
             trace_kvm_memory_fault(run->memory_fault.gpa,
                                    run->memory_fault.size,
                                    run->memory_fault.flags);
@@ -3298,7 +3327,10 @@ int kvm_cpu_exec(CPUState *cpu)
         if (difftime(current_time, last_write_time) >= 10) {
             char buffer[256];
             snprintf(buffer, sizeof(buffer), "KVM time: %ld ns, Emulation time: %ld ns\n", kvm_time_ns, emulation_time_ns);
-            qemu_log("KVM time: %ld ns, Emulation time: %ld ns\n", kvm_time_ns, emulation_time_ns);
+            snprintf(buffer + strlen(buffer), sizeof(buffer) - strlen(buffer), "IO_IN: %ld, IO_OUT: %ld, MMIO: %ld, IRQ: %ld, Others: %ld\n", count_io_in, count_io_out, count_mmio, count_irq, count_others);
+            snprintf(buffer + strlen(buffer), sizeof(buffer) - strlen(buffer), "Disk_IN: %ld, UART_IN: %ld\n", count_disk_in, count_uart_in);
+            snprintf(buffer + strlen(buffer), sizeof(buffer) - strlen(buffer), "In to port 132: %ld\n", count_132);
+            printf("%s\n", buffer);
 
             ssize_t size=write(file_fd, buffer, strlen(buffer));
             if (size < 0) {
