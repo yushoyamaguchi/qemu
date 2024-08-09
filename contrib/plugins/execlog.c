@@ -325,7 +325,7 @@ gboolean g_pattern_spec_match_string_qemu(GPatternSpec *pspec,
 #if GLIB_CHECK_VERSION(2, 70, 0)
     return g_pattern_spec_match_string(pspec, string);
 #else
-    return g_pattern_match_string(pspec, string);
+    return g_pattern_spec_match_string(pspec, string);
 #endif
 };
 #define g_pattern_spec_match_string(p, s) g_pattern_spec_match_string_qemu(p, s)

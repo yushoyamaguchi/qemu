@@ -83,7 +83,7 @@
  * Allocates @byte_size bytes of memory, and copies @byte_size bytes into it
  * from @mem. If @mem is %NULL it returns %NULL.
  *
- * This replaces g_memdup(), which was prone to integer overflows when
+ * This replaces g_memdup2(), which was prone to integer overflows when
  * converting the argument from a #gsize to a #guint.
  *
  * This static inline version is a backport of the new public API from

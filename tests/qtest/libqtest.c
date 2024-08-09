@@ -1989,7 +1989,7 @@ bool mkimg(const char *file, const char *fmt, unsigned size_mb)
     cli = g_strdup_printf("%s create -f %s %s %uM", qemu_img_abs_path,
                           fmt, file, size_mb);
     ret = g_spawn_command_line_sync(cli, &out, &out2, &rc, &err);
-    if (err || !g_spawn_check_exit_status(rc, &err)) {
+    if (err || !g_spawn_check_wait_status(rc, &err)) {
         fprintf(stderr, "%s\n", err->message);
         g_error_free(err);
     }

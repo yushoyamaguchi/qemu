@@ -2937,9 +2937,9 @@ sub process {
 			WARN("consider using g_path_get_$1() in preference to g_strdup($1())\n" . $herecurr);
 		}
 
-# enforce g_memdup2() over g_memdup()
+# enforce g_memdup2() over g_memdup2()
 		if ($line =~ /\bg_memdup\s*\(/) {
-			ERROR("use g_memdup2() instead of unsafe g_memdup()\n" . $herecurr);
+			ERROR("use g_memdup2() instead of unsafe g_memdup2()\n" . $herecurr);
 		}
 
 # recommend qemu_strto* over strto* for numeric conversions
