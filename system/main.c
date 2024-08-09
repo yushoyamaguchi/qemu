@@ -44,6 +44,7 @@ int (*qemu_main)(void) = qemu_default_main;
 
 int main(int argc, char **argv)
 {
+    printf("yamaguchi!!!!\n");
     qemu_init(argc, argv);
     return qemu_main();
 }
